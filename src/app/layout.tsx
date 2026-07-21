@@ -8,6 +8,8 @@ import {
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "../components/providers/theme-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const sourceSans3Heading = Source_Sans_3({
   subsets: ["latin"],
@@ -54,14 +56,16 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <ClerkProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <QueryProvider>{children}</QueryProvider>
+          </ThemeProvider>
+        </ClerkProvider>
       </body>
     </html>
   );
