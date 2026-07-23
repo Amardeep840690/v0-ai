@@ -18,7 +18,7 @@ export function DashboardSidebar() {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full w-full">
-      <div className="px-6 pt-6 pb-5">
+      <div className="px-6 pt-6 pb-5 shrink-0">
         <div className="flex items-center gap-3 mb-1">
           {/* <Logo size="lg" /> */}
           <Image
@@ -35,13 +35,13 @@ export function DashboardSidebar() {
         </div>
         <div className="mt-5">
           
-          <NewProjectDialog dialogOpen={open} onDialogOpenChange={setOpen} />
+          <NewProjectDialog text="New Project" dialogOpen={open} onDialogOpenChange={setOpen} size="lg" />
         </div>
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
         <ProjectList />
       </div>
-      <div className="p-6 space-y-2">
+      <div className="p-6 space-y-2 shrink-0">
         <Separator className="my-2" />
         <Button
           variant="ghost"
@@ -70,7 +70,7 @@ export function DashboardSidebar() {
 
   if (isMobile) {
     return (
-      <div className="p-4 border-b border-border flex items-center justify-between bg-background/80 backdrop-blur-sm">
+      <div className="p-4 border-b border-border flex items-center justify-between bg-background/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-2">
           <Image
             src={BrandLogo}
@@ -99,7 +99,7 @@ export function DashboardSidebar() {
   }
 
   return (
-    <aside className="w-[300px] border-r border-border h-full hidden md:flex flex-col bg-background/70 backdrop-blur-md">
+    <aside className="w-[300px] border-r border-border h-full hidden md:flex flex-col bg-background/70 backdrop-blur-md shrink-0">
       <SidebarContent />
     </aside>
   );

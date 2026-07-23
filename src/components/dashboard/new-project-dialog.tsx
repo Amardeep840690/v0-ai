@@ -20,9 +20,13 @@ import { AlertCircle } from "lucide-react";
 export function NewProjectDialog({
   dialogOpen,
   onDialogOpenChange,
+  text,
+  size
 }: {
   dialogOpen: boolean;
   onDialogOpenChange: (open: boolean) => void;
+  text:string;
+  size: "sm" | "default" | "lg" | "icon";
 }) {
   const [projectName, setProjectName] = useState("");
   const { mutate: createProject, isPending } = useCreateProject();
@@ -49,11 +53,11 @@ export function NewProjectDialog({
     <Dialog open={dialogOpen} onOpenChange={onDialogOpenChange}>
       <DialogTrigger asChild>
         <Button
-          size="lg"
+          size={size}
           className="w-full gap-2 btn-primary transition-all duration-200 hover:scale-[1.02] shadow-lg shadow-primary/30"
         >
           <Plus className="w-5 h-5" />
-          New Project
+          {text}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] rounded-2xl border border-border bg-card shadow-floating">

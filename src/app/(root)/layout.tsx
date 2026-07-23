@@ -11,16 +11,14 @@ export default async function RootLayout({
   await onboardUser();
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex">
       <AnimatedBackground />
-      <div className="flex flex-1 overflow-hidden">
-        <DashboardSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardNavbar />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            {children}
-          </main>
-        </div>
+      <DashboardSidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <DashboardNavbar />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
