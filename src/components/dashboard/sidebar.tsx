@@ -10,9 +10,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import BrandLogo from "../brand/brand_logo.png";
+import { useState } from "react";
 
 export function DashboardSidebar() {
   const isMobile = useIsMobile();
+  const [open ,setOpen] = useState(false);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full w-full">
@@ -32,7 +34,8 @@ export function DashboardSidebar() {
           </div>
         </div>
         <div className="mt-5">
-          <NewProjectDialog />
+          
+          <NewProjectDialog dialogOpen={open} onDialogOpenChange={setOpen} />
         </div>
       </div>
       <div className="flex-1 overflow-hidden">
