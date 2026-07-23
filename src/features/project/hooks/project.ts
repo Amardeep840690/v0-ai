@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createProject, getProjects, getProjectById } from "../action";
+import {
+  createProject,
+  getProjects,
+  getProjectById,
+  getLatestProject,
+} from "../action";
 
 export type ActionError = {
   error: string;
@@ -52,5 +57,12 @@ export const useGetProjectById = (id: string) => {
   return useQuery({
     queryKey: ["project", id],
     queryFn: async () => unwrapActionResult(await getProjectById(id)),
+  });
+};
+
+export const useGetLatestProject = () => {
+  return useQuery({
+    queryKey: ["latest_project"],
+    queryFn: async () => unwrapActionResult(await getLatestProject()),
   });
 };

@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/features/auth/action";
 import { db } from "@/index";
 import { desc, eq } from "drizzle-orm";
 import { generateSlug } from "random-word-slugs";
+import { use } from "react";
 
 export const createProject = async (projectName?: string, prompt?: string) => {
   const user = await getCurrentUser();
@@ -110,6 +111,33 @@ export const getProjectById = async (projectId: string) => {
     console.error("❌ Error getting project by id:", error);
     return {
       error: "Failed to get project by id",
+    };
+  }
+};
+
+export const getLatestProject = async () => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        error: "Unauthorized",
+      };
+    }
+
+    const [latestProject] = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, user.id))
+      .orderBy(desc(projects.updatedAt))
+      .limit(1);
+
+    return latestProject ?? null;
+  } catch (error) {
+    console.error("Error fetching latest project:", error);
+
+    return {
+      error: "Failed to fetch latest project",
     };
   }
 };
