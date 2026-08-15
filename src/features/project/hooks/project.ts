@@ -4,6 +4,8 @@ import {
   getProjects,
   getProjectById,
   getLatestProject,
+  deleteProject,
+  renameProject,
 } from "../action";
 
 export type ActionError = {
@@ -36,11 +38,11 @@ type CreateProjectPayload = {
 
 export const useCreateProject = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({ projectName, prompt }: CreateProjectPayload) =>
       unwrapActionResult(await createProject(projectName, prompt)),
     onSuccess: () => {
+      //refresh sidebar projects
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
@@ -64,5 +66,51 @@ export const useGetLatestProject = () => {
   return useQuery({
     queryKey: ["latest_project"],
     queryFn: async () => unwrapActionResult(await getLatestProject()),
+  });
+};
+
+export const useDeleteProject = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      return unwrapActionResult(await deleteProject(projectId));
+    },
+
+    onSuccess: async () => {
+      // Refresh sidebar projects
+      await queryClient.invalidateQueries({
+        queryKey: ["projects"],
+      });
+
+      // Refresh Continue Working
+      await queryClient.invalidateQueries({
+        queryKey: ["latest_project"],
+      });
+    },
+  });
+};
+
+type RenameProjectType = {
+  projectId: string;
+  projectName: string;
+};
+
+export const useRenameProject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, projectName }: RenameProjectType) => {
+      return unwrapActionResult(await renameProject(projectId, projectName));
+    },
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["projects"],
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: ["latest_project"],
+      });
+    },
   });
 };

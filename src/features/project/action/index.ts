@@ -2,9 +2,8 @@
 import { messages, projects } from "@/db/schema";
 import { getCurrentUser } from "@/features/auth/action";
 import { db } from "@/index";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { generateSlug } from "random-word-slugs";
-import { use } from "react";
 
 export const createProject = async (projectName?: string, prompt?: string) => {
   const user = await getCurrentUser();
@@ -97,6 +96,9 @@ export const getProjectById = async (projectId: string) => {
       .where(eq(projects.id, projectId));
 
     if (!project) {
+      return {
+        error: "Project not found",
+      };
     }
     const projectMessage = await db
       .select()
@@ -138,6 +140,82 @@ export const getLatestProject = async () => {
 
     return {
       error: "Failed to fetch latest project",
+    };
+  }
+};
+
+export const deleteProject = async (projectId: string) => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        error: "Unauthorized",
+      };
+    }
+
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.userId, user.id)))
+      .limit(1);
+
+    if (!project) {
+      return {
+        error: "Project not found",
+      };
+    }
+
+    await db.delete(projects).where(eq(projects.id, projectId));
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("❌ Error deleting project:", error);
+
+    return {
+      error: "Failed to delete project",
+    };
+  }
+};
+
+export const renameProject = async (projectId: string, projectName: string) => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        error: "Unauthorized",
+      };
+    }
+
+    const name = projectName.trim();
+
+    if (!name) {
+      return {
+        error: "Project name cannot be empty",
+      };
+    }
+
+    const [project] = await db
+      .update(projects)
+      .set({ name, updatedAt: new Date() })
+      .where(and(eq(projects.id, projectId), eq(projects.userId, user.id)))
+      .returning();
+
+    if (!project) {
+      return {
+        error: "Project not found",
+      };
+    }
+
+    return project;
+  } catch (error) {
+    console.error("❌ Error renaming project:", error);
+
+    return {
+      error: "Failed to rename project",
     };
   }
 };

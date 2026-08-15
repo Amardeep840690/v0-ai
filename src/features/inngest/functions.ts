@@ -1,4 +1,3 @@
-
 import { inngest } from "./client";
 
 export const processTask = inngest.createFunction(
@@ -13,16 +12,3 @@ export const processTask = inngest.createFunction(
     return { message: `Task ${event.data.id} complete`, result };
   },
 );
-
-// export const generateTask = inngest.createFunction(
-//     {id:"generate-Task",triggers:{event:"app/task.generated"}},
-//     async({event,step})=>{
-//         const result = await step.run("handle-generate",async ()=>{
-//             return {procced:"true",id:event.data.id}
-//         })
-
-//         await step.sleep("pause","1s");
-
-//         return{message:"process generated",data:{result}};
-//     }
-// )

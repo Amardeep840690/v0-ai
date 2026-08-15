@@ -84,6 +84,7 @@ export function ProjectList() {
             Projects?.map((project) => (
               <ProjectItem
                 key={project.id}
+                id={project.id}
                 title={project.name}
                 updatedAt={project.updatedAt}
                 active={false}
