@@ -1,5 +1,5 @@
 "use server";
-import { messages, projects } from "@/db/schema";
+import { fragments, messages, projects } from "@/db/schema";
 import { getCurrentUser } from "@/features/auth/action";
 import { inngest } from "@/features/inngest/client";
 import { db } from "@/index";
@@ -385,4 +385,110 @@ export const stopProjectTask = async (taskId: string) => {
       error: "Failed to stop task",
     };
   }
+};
+
+export interface FileChange {
+  type: "CREATE" | "UPDATE" | "MOVE" | "DELETE";
+  oldPath: string | null;
+  newPath: string | null;
+  content?: string;
+}
+
+interface SaveFragmentsMessageProps {
+  messageId: string;
+  projectId: string;
+  changes: FileChange[];
+}
+
+export const saveFragmentsMessage = async ({
+  messageId,
+  projectId,
+  changes,
+}: SaveFragmentsMessageProps) => {
+  // Get the latest fragment for this project
+  const [previousFragment] = await db
+    .select({
+      id: fragments.id,
+      files: fragments.files,
+      messageId: fragments.messageId,
+    })
+    .from(fragments)
+    .innerJoin(messages, eq(fragments.messageId, messages.id))
+    .where(eq(messages.projectId, projectId))
+    .orderBy(desc(fragments.createdAt))
+    .limit(1);
+
+  // If this is the first fragment, start with empty files
+  const previousFiles = previousFragment?.files ?? {};
+
+  // Copy previous files into a new object
+  const file: Record<string, string> = {
+    ...(previousFiles as Record<string, string>),
+  };
+
+  // Apply AI changes
+  for (const change of changes) {
+    switch (change.type) {
+      case "CREATE": {
+        if (!change.newPath || change.content === undefined) {
+          throw new Error("CREATE requires newPath and content");
+        }
+
+        file[change.newPath] = change.content;
+        break;
+      }
+
+      case "UPDATE": {
+        if (
+          !change.oldPath ||
+          !change.newPath ||
+          change.content === undefined
+        ) {
+          throw new Error("UPDATE requires oldPath, newPath and content");
+        }
+
+        delete file[change.oldPath];
+
+        file[change.newPath] = change.content;
+        break;
+      }
+
+      case "MOVE": {
+        if (
+          !change.oldPath ||
+          !change.newPath ||
+          change.content === undefined
+        ) {
+          throw new Error("MOVE requires oldPath, newPath and content");
+        }
+
+        delete file[change.oldPath];
+
+        file[change.newPath] = change.content;
+        break;
+      }
+
+      case "DELETE": {
+        if (!change.oldPath) {
+          throw new Error("DELETE requires oldPath");
+        }
+
+        delete file[change.oldPath];
+        break;
+      }
+    }
+  }
+
+  // Create a new fragment
+  const [newFragment] = await db
+    .insert(fragments)
+    .values({
+      messageId,
+      sandboxUrl: "https://codesandbox.io/s/new",
+      title: "New Fragment",
+      files: file,
+    })
+    .returning();
+
+  return newFragment;
 };
