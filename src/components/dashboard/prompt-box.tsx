@@ -16,11 +16,12 @@ export function PromptBox({ value, onChange }: PromptBoxProps) {
   const router = useRouter();
 
   const handleSubmit = () => {
+    if (!value.trim() || isPending) return;
     createProject(
       { prompt: value },
       {
         onSuccess: (project) => {
-          router.push(`/projects/${project.id}`);
+          router.push(`/projects/${project.id}?generating=true`);
         },
         onError: (error) => {
           toast.error(error.message);

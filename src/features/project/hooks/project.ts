@@ -6,6 +6,7 @@ import {
   getLatestProject,
   deleteProject,
   renameProject,
+  createMessage,
 } from "../action";
 
 export type ActionError = {
@@ -55,10 +56,14 @@ export const useGetProjects = () => {
   });
 };
 
-export const useGetProjectById = (id: string) => {
+export const useGetProjectById = (
+  id: string,
+  options?: { refetchInterval?: number | false },
+) => {
   return useQuery({
     queryKey: ["project", id],
     queryFn: async () => unwrapActionResult(await getProjectById(id)),
+    refetchInterval: options?.refetchInterval,
   });
 };
 
@@ -110,6 +115,35 @@ export const useRenameProject = () => {
 
       await queryClient.invalidateQueries({
         queryKey: ["latest_project"],
+      });
+    },
+  });
+};
+
+interface CreateMessageParams {
+  projectId: string;
+  content: string;
+  role: "USER" | "ASSISTANT";
+  type: "RESULT" | "ERROR";
+}
+
+export const useCreateMessage = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      content,
+      role,
+      type,
+    }: CreateMessageParams) => {
+      return unwrapActionResult(
+        await createMessage({ projectId, content, role, type }),
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["project", variables.projectId],
       });
     },
   });

@@ -1,11 +1,7 @@
-import React from 'react'
-
-const Projectlayout = () => {
-  return (
-    <div>
-      
-    </div>
-  )
+export default function ProjectLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>;
 }
-
-export default Projectlayout

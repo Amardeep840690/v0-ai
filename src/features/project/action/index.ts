@@ -1,8 +1,9 @@
 "use server";
 import { messages, projects } from "@/db/schema";
 import { getCurrentUser } from "@/features/auth/action";
+import { inngest } from "@/features/inngest/client";
 import { db } from "@/index";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, eq, and, asc } from "drizzle-orm";
 import { generateSlug } from "random-word-slugs";
 
 export const createProject = async (projectName?: string, prompt?: string) => {
@@ -44,7 +45,13 @@ export const createProject = async (projectName?: string, prompt?: string) => {
     });
 
     if (trimmedPrompt) {
-      // await inngest.send()
+      await inngest.send({
+        name: "app/task.created",
+        data: {
+          projectId: project.id,
+          prompt: trimmedPrompt,
+        },
+      });
     }
 
     return project;
@@ -103,7 +110,8 @@ export const getProjectById = async (projectId: string) => {
     const projectMessage = await db
       .select()
       .from(messages)
-      .where(eq(messages.projectId, project.id));
+      .where(eq(messages.projectId, project.id))
+      .orderBy(asc(messages.createdAt));
 
     return {
       project,
@@ -216,6 +224,165 @@ export const renameProject = async (projectId: string, projectName: string) => {
 
     return {
       error: "Failed to rename project",
+    };
+  }
+};
+
+interface CreateMessageParams {
+  projectId: string;
+  content: string;
+  role: "USER" | "ASSISTANT";
+  type: "RESULT" | "ERROR";
+}
+
+export const createMessage = async ({
+  projectId,
+  content,
+  role,
+  type,
+}: CreateMessageParams) => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        error: "Unauthorized",
+      };
+    }
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.userId, user.id), eq(projects.id, projectId)));
+
+    if (!project) {
+      return {
+        error: "Project not found",
+      };
+    }
+
+    const trimmedContent = content.trim();
+
+    if (!trimmedContent) {
+      return {
+        error: "Message cannot be empty",
+      };
+    }
+
+    const [createdMessage] = await db
+      .insert(messages)
+      .values({
+        content: trimmedContent,
+        role,
+        type,
+        projectId,
+      })
+      .returning();
+
+    return createdMessage;
+  } catch (error) {
+    console.error("❌ Error creating message:", error);
+
+    return {
+      error: "Failed to save message",
+    };
+  }
+};
+
+export const createDirectMessage = async ({
+  projectId,
+  content,
+  role,
+  type,
+}: CreateMessageParams) => {
+  try {
+    const trimmedContent = content.trim();
+    if (!trimmedContent) {
+      return {
+        error: "Message cannot be empty",
+      };
+    }
+
+    const [createdMessage] = await db
+      .insert(messages)
+      .values({
+        content: trimmedContent,
+        role,
+        type,
+        projectId,
+      })
+      .returning();
+
+    return createdMessage;
+  } catch (error) {
+    console.error("❌ Error creating direct message:", error);
+    return {
+      error: "Failed to save direct message",
+    };
+  }
+};
+
+export const startprojectTask = async (
+  projectId: string,
+  text: string,
+  taskId: string,
+) => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return {
+        error: "Unauthorized",
+      };
+    }
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.userId, user.id), eq(projects.id, projectId)));
+
+    if (!project) {
+      return {
+        error: "Project not found",
+      };
+    }
+
+    await inngest.send({
+      name: "app/task.created",
+      data: {
+        projectId,
+        prompt: text,
+        taskId,
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Error starting project task:", error);
+    return {
+      error: "Failed to start task",
+    };
+  }
+};
+
+export const stopProjectTask = async (taskId: string) => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return {
+        error: "Unauthorized",
+      };
+    }
+
+    const result = await inngest.send({
+      name: "app/task.cancelled",
+      data: {
+        taskId,
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Error stopping project task:", error);
+    return {
+      error: "Failed to stop task",
     };
   }
 };
