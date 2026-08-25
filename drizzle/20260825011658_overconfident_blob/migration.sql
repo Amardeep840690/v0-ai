@@ -1,0 +1,1 @@
+ALTER TABLE "fragments" ALTER COLUMN "sandbox_url" DROP NOT NULL;

@@ -10,12 +10,13 @@ import { ChatPanel } from "./chat-panel";
 import { WorkspacePanel } from "./workspace-panel";
 import { ProjectStatus } from "./generation-status";
 import { FileNode } from "./file-tree-item";
-import { useGetProjectById } from "@/features/project/hooks/project";
+import {
+  useGetLatestFragment,
+  useGetProjectById,
+} from "@/features/project/hooks/project";
 import { stopProjectTask } from "@/features/project/action";
+import { buildFileTree } from "./file-tree-utils";
 
-// Mock files for now.
-// Later these will come from the database/project files.
-const MOCK_FILES: FileNode[] = [];
 
 interface ProjectWorkspaceProps {
   projectId: string;
@@ -34,8 +35,12 @@ export function ProjectWorkspace({
     initialGenerating ? "Generating" : "Ready",
   );
 
-  // Project files
-  const [files] = useState<FileNode[]>(MOCK_FILES);
+  const { data: projectFileData } = useGetLatestFragment(projectId, {
+    refetchInterval: status === "Generating" ? 1500 : false,
+  });
+  const files = buildFileTree(
+    (projectFileData?.files as Record<string, string>) ?? {},
+  );
 
   // Currently selected file
   // null because we don't have generated files yet
@@ -131,6 +136,7 @@ export function ProjectWorkspace({
             files={files}
             activeFile={activeFile}
             onSelectFile={setActiveFile}
+            sandboxUrl={projectFileData?.sandboxUrl}
             className="h-full min-h-0 min-w-0 flex-1"
           />
         </div>
@@ -157,6 +163,7 @@ export function ProjectWorkspace({
                 files={files}
                 activeFile={activeFile}
                 onSelectFile={setActiveFile}
+                sandboxUrl={projectFileData?.sandboxUrl}
                 className="h-full"
               />
             )}

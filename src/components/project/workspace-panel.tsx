@@ -12,6 +12,7 @@ interface WorkspacePanelProps {
   files: FileNode[];
   activeFile: FileNode | null;
   onSelectFile: (file: FileNode) => void;
+  sandboxUrl?: string | null;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export function WorkspacePanel({
   files,
   activeFile,
   onSelectFile,
+  sandboxUrl,
   className,
 }: WorkspacePanelProps) {
   return (
@@ -32,7 +34,10 @@ export function WorkspacePanel({
           className="flex flex-1 min-w-0 min-h-0 h-full"
         />
       ) : (
-        <PreviewWorkspace className="flex flex-1 min-w-0 min-h-0 h-full" />
+        <PreviewWorkspace
+          sandboxUrl={sandboxUrl}
+          className="flex flex-1 min-w-0 min-h-0 h-full"
+        />
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import {
   deleteProject,
   renameProject,
   createMessage,
+  getLatestFragment,
 } from "../action";
 
 export type ActionError = {
@@ -60,6 +61,7 @@ export const useGetProjectById = (
   id: string,
   options?: { refetchInterval?: number | false },
 ) => {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["project", id],
     queryFn: async () => unwrapActionResult(await getProjectById(id)),
@@ -146,5 +148,21 @@ export const useCreateMessage = () => {
         queryKey: ["project", variables.projectId],
       });
     },
+  });
+};
+
+export const useGetLatestFragment = (
+  projectId: string,
+  options?: { refetchInterval?: number | false },
+) => {
+  return useQuery({
+    queryKey: ["latest-fragment", projectId],
+
+    queryFn: async () => {
+      return unwrapActionResult(await getLatestFragment(projectId));
+    },
+
+    enabled: !!projectId,
+    refetchInterval: options?.refetchInterval,
   });
 };

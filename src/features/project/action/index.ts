@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/features/auth/action";
 import { inngest } from "@/features/inngest/client";
 import { db } from "@/index";
 import { desc, eq, and, asc } from "drizzle-orm";
+import { Sandbox } from "@e2b/code-interpreter";
 import { generateSlug } from "random-word-slugs";
 
 export const createProject = async (projectName?: string, prompt?: string) => {
@@ -484,11 +485,102 @@ export const saveFragmentsMessage = async ({
     .insert(fragments)
     .values({
       messageId,
-      sandboxUrl: "https://codesandbox.io/s/new",
       title: "New Fragment",
       files: file,
     })
     .returning();
 
   return newFragment;
+};
+
+export const getLatestFragment = async (projectId: string) => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        error: "Unauthorized",
+      };
+    }
+
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.userId, user.id)));
+
+    if (!project) {
+      return {
+        error: "Project not found",
+      };
+    }
+
+    const [fragment] = await db
+      .select({
+        id: fragments.id,
+        messageId: fragments.messageId,
+        sandboxUrl: fragments.sandboxUrl,
+        title: fragments.title,
+        files: fragments.files,
+        createdAt: fragments.createdAt,
+        updatedAt: fragments.updatedAt,
+      })
+      .from(fragments)
+      .innerJoin(messages, eq(fragments.messageId, messages.id))
+      .where(eq(messages.projectId, projectId))
+      .orderBy(desc(fragments.createdAt))
+      .limit(1);
+
+    if (!fragment) {
+      return {
+        error: "Fragment not found",
+      };
+    }
+
+    return fragment;
+  } catch (error) {
+    console.error("❌ Error getting latest fragment:", error);
+
+    return {
+      error: "Failed to get latest fragment",
+    };
+  }
+};
+
+export const createPreviewSandbox = async (files: Record<string, string>) => {
+  const sandbox = await Sandbox.create({
+    template: "v0-ai-nextjs",
+  });
+
+  console.log("Sandbox created:", sandbox.sandboxId);
+
+  // DB se aaye files sandbox mein write karo
+  for (const [filePath, content] of Object.entries(files)) {
+    console.log("Writing:", filePath);
+
+    await sandbox.files.write(filePath, content);
+  }
+
+  const sandboxUrl = `http://${sandbox.getHost(3000)}`;
+
+  console.log("Preview URL:", sandboxUrl);
+
+  return {
+    sandboxId: sandbox.sandboxId,
+    sandboxUrl,
+  };
+};
+
+export const updateFragmentSandboxUrl = async (
+  fragmentId: string,
+  sandboxUrl: string,
+) => {
+  const [updatedFragment] = await db
+    .update(fragments)
+    .set({
+      sandboxUrl,
+    })
+    .where(eq(fragments.id, fragmentId))
+    .returning();
+
+  return updatedFragment;
 };

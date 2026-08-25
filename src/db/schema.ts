@@ -97,7 +97,7 @@ export const fragments = pgTable("fragments", {
     .unique()
     .notNull(),
 
-  sandboxUrl: text("sandbox_url").notNull(),
+  sandboxUrl: text("sandbox_url"),
 
   title: varchar("title", { length: 255 }).notNull(),
 

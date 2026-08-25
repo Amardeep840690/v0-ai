@@ -117,7 +117,14 @@ export function PreviewToolbar({
         <Button
           variant="outline"
           size="icon-xs"
-          onClick={() => window.open(`http://${url}`, "_blank")}
+          onClick={() => {
+            if (url) {
+              const formattedUrl = url.startsWith("http://") || url.startsWith("https://")
+                ? url
+                : `http://${url}`;
+              window.open(formattedUrl, "_blank");
+            }
+          }}
           className="text-muted-foreground hover:text-foreground h-7 w-7 rounded-lg hidden sm:flex"
           title="Open in new window"
         >

@@ -6,11 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "build:sandbox": "sandbox/build.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@clerk/nextjs": "^7.5.20",
+    "@e2b/code-interpreter": "^2.7.1",
     "@shadcn/react": "^0.2.1",
     "@tanstack/react-query": "^5.101.3",
     "class-variance-authority": "^0.7.1",
@@ -19,6 +21,7 @@
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^1.0.0-rc.4",
+    "e2b": "^2.45.0",
     "embla-carousel-react": "^8.6.0",
     "inngest": "^4.13.0",
     "input-otp": "^1.4.2",
