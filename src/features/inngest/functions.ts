@@ -1,16 +1,20 @@
 import {
   createDirectMessage,
   saveFragmentsMessage,
-  FileChange,
-  createPreviewSandbox,
   updateFragmentSandboxUrl,
+  createPreviewSandbox,
 } from "../project/action/index";
+
 import { inngest } from "./client";
+import { generateCodeResponse } from "../ai/openai";
+import { getOrCreateSandbox } from "../ai/tools/sandbox";
 
 export const processTask = inngest.createFunction(
   {
     id: "process-task",
+
     triggers: [{ event: "app/task.created" }],
+
     cancelOn: [
       {
         event: "app/task.cancelled",
@@ -18,164 +22,46 @@ export const processTask = inngest.createFunction(
       },
     ],
   },
+
   async ({ event, step }) => {
     const { projectId, prompt, taskId } = event.data;
 
     try {
+      const { sandboxId } = await step.run("get-sandbox", async () => {
+        return getOrCreateSandbox(projectId);
+      });
 
-      // Dummy AI response content
-      const dummyAIResponse: {
-        assistantMessage: string;
-        changes: FileChange[];
-      } = {
-        assistantMessage:
-          "I've created a modern Todo application with add, complete, and delete functionality.",
+      console.log("Sandbox ID:", sandboxId);
 
-        changes: [
-          {
-            type: "CREATE" as const,
-            oldPath: null,
-            newPath: "app/page.tsx",
-            content: `import TodoApp from "@/components/TodoApp";
+      /*
+       * 2. Ask AI agent to work on the project
+       *
+       * AI has access to:
+       * - listFiles
+       * - readFiles
+       * - createOrUpdateFiles
+       * - terminal
+       *
+       * The tools operate directly on this sandbox.
+       */
+      const aiResponse = await step.run("generate-ai-response", async () => {
+        return generateCodeResponse({
+          prompt,
+          sandboxId,
+        });
+      });
 
-export default function Home() {
-  return <TodoApp />;
-}`,
-          },
+      console.log("AI Response:", aiResponse);
 
-          {
-            type: "CREATE" as const,
-            oldPath: null,
-            newPath: "components/TodoApp.tsx",
-            content: `"use client";
-
-import { useState } from "react";
-
-interface Todo {
-  id: number;
-  text: string;
-  completed: boolean;
-}
-
-export default function TodoApp() {
-  const [todos, setTodos] = useState<Todo[]>([
-    {
-      id: 1,
-      text: "Learn E2B",
-      completed: true,
-    },
-    {
-      id: 2,
-      text: "Build V0-AI preview",
-      completed: false,
-    },
-  ]);
-
-  const [input, setInput] = useState("");
-
-  const addTodo = () => {
-    const text = input.trim();
-
-    if (!text) return;
-
-    setTodos((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        text,
-        completed: false,
-      },
-    ]);
-
-    setInput("");
-  };
-
-  const toggleTodo = (id: number) => {
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id
-          ? { ...todo, completed: !todo.completed }
-          : todo,
-      ),
-    );
-  };
-
-  const deleteTodo = (id: number) => {
-    setTodos((prev) =>
-      prev.filter((todo) => todo.id !== id),
-    );
-  };
-
-  return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-xl rounded-xl border p-6">
-        <h1 className="text-3xl font-bold">
-          Todo App
-        </h1>
-
-        <div className="mt-6 flex gap-2">
-          <input
-            className="flex-1 rounded-md border px-3 py-2"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Add a task..."
-          />
-
-          <button
-            className="rounded-md bg-black px-4 py-2 text-white"
-            onClick={addTodo}
-          >
-            Add
-          </button>
-        </div>
-
-        <div className="mt-6 space-y-2">
-          {todos.map((todo) => (
-            <div
-              key={todo.id}
-              className="flex items-center justify-between rounded-md border p-3"
-            >
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={todo.completed}
-                  onChange={() => toggleTodo(todo.id)}
-                />
-
-                <span
-                  className={
-                    todo.completed
-                      ? "line-through text-muted-foreground"
-                      : ""
-                  }
-                >
-                  {todo.text}
-                </span>
-              </label>
-
-              <button
-                className="text-sm text-red-500"
-                onClick={() => deleteTodo(todo.id)}
-              >
-                Delete
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </main>
-  );
-}`,
-          },
-        ],
-      };
-      // Save assistant response to DB
+      /*
+       * 3. Save assistant response
+       */
       const assistantMessage = await step.run(
         "save-assistant-message",
         async () => {
           return createDirectMessage({
             projectId,
-            content: dummyAIResponse.assistantMessage,
+            content: aiResponse.assistantMessage,
             role: "ASSISTANT",
             type: "RESULT",
           });
@@ -186,37 +72,43 @@ export default function TodoApp() {
         throw new Error(assistantMessage.error);
       }
 
-      if (dummyAIResponse.changes.length > 0) {
-        // Save fragment
+      if (aiResponse.changes.length > 0) {
         const fragment = await step.run("save-fragment", async () => {
           return saveFragmentsMessage({
             messageId: assistantMessage.id,
             projectId,
-            changes: dummyAIResponse.changes,
+            changes: aiResponse.changes,
           });
         });
 
-        // Create E2B preview
         const preview = await step.run("create-preview", async () => {
           return createPreviewSandbox(fragment.files as Record<string, string>);
         });
 
         console.log("Preview URL:", preview.sandboxUrl);
 
-        // Save E2B URL in fragment
+        /*
+         * 6. Save preview URL in fragment
+         */
         await step.run("save-preview-url", async () => {
           return updateFragmentSandboxUrl(fragment.id, preview.sandboxUrl);
         });
       }
+
       return {
         processed: true,
         projectId,
+        taskId,
+        sandboxId,
       };
     } catch (error) {
-      console.error("❌ Error in processTask Inngest function:", error);
+      console.error("❌ Error in processTask:", error);
 
+      /*
+       * Save error message
+       */
       await step.run("save-error-message", async () => {
-        return await createDirectMessage({
+        return createDirectMessage({
           projectId,
           content: "Failed to process request. Please try again.",
           role: "ASSISTANT",
@@ -226,6 +118,8 @@ export default function TodoApp() {
 
       return {
         processed: false,
+        projectId,
+        taskId,
         error: "Task failed",
       };
     }

@@ -44,6 +44,8 @@ export const projects = pgTable("projects", {
 
   name: varchar("name", { length: 255 }).notNull(),
 
+  sandboxId : varchar("sandbox_id", { length: 255 }),
+
   userId: varchar("user_id", { length: 255 })
     .references(() => users.id, {
       onDelete: "cascade",
