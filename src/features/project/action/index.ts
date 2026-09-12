@@ -553,12 +553,15 @@ export const createPreviewSandbox = async (files: Record<string, string>) => {
 
   console.log("Sandbox created:", sandbox.sandboxId);
 
-  // DB se aaye files sandbox mein write karo
   for (const [filePath, content] of Object.entries(files)) {
     console.log("Writing:", filePath);
 
     await sandbox.files.write(filePath, content);
   }
+
+  const page = await sandbox.files.read("app/page.tsx");
+
+  console.log("PREVIEW PAGE:", page);
 
   const sandboxUrl = `http://${sandbox.getHost(3000)}`;
 

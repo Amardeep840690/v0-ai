@@ -12,7 +12,7 @@ async function buildTemplate() {
     cpuCount: 4,
     memoryMB: 4096,
     onBuildLogs: defaultBuildLogger(),
-    apiKey: "e2b_ba85c7d42ee47d6756dcaa0f1517715cdee51f52",
+    apiKey: process.env.E2B_API_KEY || "",
   });
 
   console.log("✅ Template build completed!");
