@@ -563,7 +563,7 @@ export const createPreviewSandbox = async (files: Record<string, string>) => {
 
   console.log("PREVIEW PAGE:", page);
 
-  const sandboxUrl = `http://${sandbox.getHost(3000)}`;
+  const sandboxUrl = `https://${sandbox.getHost(3000)}`;
 
   console.log("Preview URL:", sandboxUrl);
 
