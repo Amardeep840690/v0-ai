@@ -17,7 +17,6 @@ import {
 import { stopProjectTask } from "@/features/project/action";
 import { buildFileTree } from "./file-tree-utils";
 
-
 interface ProjectWorkspaceProps {
   projectId: string;
   initialGenerating?: boolean;
@@ -35,9 +34,10 @@ export function ProjectWorkspace({
     initialGenerating ? "Generating" : "Ready",
   );
 
-  const { data: projectFileData } = useGetLatestFragment(projectId, {
-    refetchInterval: status === "Generating" ? 1500 : false,
-  });
+  const { data: projectFileData } = useGetLatestFragment(projectId);
+  // const { data: projectFileData } = useGetLatestFragment(projectId, {
+  //   refetchInterval: status === "Generating" ? 1500 : false,
+  // });
   const files = buildFileTree(
     (projectFileData?.files as Record<string, string>) ?? {},
   );
@@ -58,9 +58,14 @@ export function ProjectWorkspace({
     data: projectData,
     isLoading,
     isError,
-  } = useGetProjectById(projectId, {
-    refetchInterval: status === "Generating" ? 1500 : false,
-  });
+  } = useGetProjectById(projectId);
+  // const {
+  //   data: projectData,
+  //   isLoading,
+  //   isError,
+  // } = useGetProjectById(projectId, {
+  //   refetchInterval: status === "Generating" ? 1500 : false,
+  // });
 
   useEffect(() => {
     if (

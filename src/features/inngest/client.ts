@@ -1,3 +1,8 @@
 import { Inngest } from "inngest";
 
-export const inngest = new Inngest({ id: "v0" });
+export const inngest = new Inngest({
+  id: "v0",
+  checkpointing: {
+    maxRuntime: "240s",
+  },
+});
